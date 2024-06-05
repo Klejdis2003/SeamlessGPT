@@ -8,19 +8,14 @@ load_dotenv()
 
 
 class _GptClient:
-    def __init__(self):
+    def __init__(self, model):
         self._client = AzureOpenAI(
             azure_endpoint=getenv("AZURE_OPENAI_API_ENDPOINT"),
             api_key=getenv("AZURE_OPENAI_API_KEY"),
             api_version="2024-02-01"
         )
         self.completions = self._client.chat.completions
-
-
-class Gpt35:
-    def __init__(self, client=_GptClient()):
-        self.client = client
-        self._model = "ChatGPT35"
+        self._model = model
 
     def _send_chat(self, chat: list, full_response=False) -> ChatCompletion | str:
         """
@@ -36,7 +31,7 @@ class Gpt35:
         :param full_response: flag to return the full response or just the message content
         :return: response from the GPT-3.5 model
         """
-        response = self.client.completions.create(
+        response = self.completions.create(
             model=self._model,
             messages=chat
         )
@@ -96,7 +91,7 @@ class Gpt35:
             full_response=full_response
         )
 
-    def get_suggestions(self, prompt:str, full_response=False):
+    def get_suggestions(self, prompt: str, full_response=False):
         return self._send_chat(
             [
                 {
@@ -115,4 +110,11 @@ class Gpt35:
         )
 
 
+class Gpt35(_GptClient):
+    def __init__(self):
+        super().__init__(model="ChatGPT35")
 
+
+class Gpt4O(_GptClient):
+    def __init__(self):
+        super().__init__(model="ChatGPT4O")

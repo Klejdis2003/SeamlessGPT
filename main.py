@@ -1,13 +1,11 @@
 import time
 
-from pyperclip import set_clipboard
-
 from cliboard_tracker import get_clipboard, copy_to_clipboard
-from gpt import Gpt35
+from gpt import Gpt4O
 
 
 def main():
-    gpt = Gpt35()
+    gpt = Gpt4O()
     value = get_clipboard()
     response = gpt.send_single_prompt(value)
     print(f'Response to "{value}":\n {response}')
