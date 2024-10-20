@@ -1,23 +1,30 @@
 from os import getenv
+from typing import Iterable
 
 from dotenv import load_dotenv
-from openai import AzureOpenAI
+from openai import AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 
 load_dotenv()
 
 
-class _GptClient:
-    def __init__(self, model):
-        self._client = AzureOpenAI(
-            azure_endpoint=getenv("AZURE_OPENAI_API_ENDPOINT"),
-            api_key=getenv("AZURE_OPENAI_API_KEY"),
-            api_version="2024-02-01"
-        )
-        self.completions = self._client.chat.completions
-        self._model = model
+class _OpenAiClient:
+    def __init__(self, config: dict[str, any]):
+        try:
+            self._client: OpenAI = config["client"]
+            self._model: str = config["model"]
 
-    def _send_chat(self, chat: list, full_response=False) -> ChatCompletion | str:
+            config.pop("client")
+            config.pop("model")
+
+            self.config = config
+            self.completions = self._client.chat.completions
+            self.chat = []
+        except KeyError:
+            raise ValueError("Invalid configuration. The configuration must at least contain the keys: client, model")
+
+
+    def send_message(self, message: str, full_response=False, with_previous_chat_context = False, remember_response = False) -> ChatCompletion | str:
         """
         Send a chat to the GPT-3.5 model. Must be in the format:
         [
@@ -31,20 +38,39 @@ class _GptClient:
         :param full_response: flag to return the full response or just the message content
         :return: response from the GPT-3.5 model
         """
-        response = self.completions.create(
-            model=self._model,
-            messages=chat
-        )
+
+        if with_previous_chat_context:
+            self.chat.append({"role": "user", "content": message})
+            response = self.completions.create(
+                model=self._model,
+                messages=self.chat,
+                **self.config
+            )
+        else:
+            response = self.start_chat_as_user(message, full_response, remember_chat=remember_response)
         return response if full_response else response.choices[0].message.content
 
+    def start_chat_as_user(self, prompt: str, full_response=False, remember_chat = False) -> str | ChatCompletion:
+        chat = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        response =  self.completions.create(
+            model=self._model,
+            messages=chat,
+            **self.config
+        )
+
+        if remember_chat:
+            self.chat.append(chat[0])
+            self.chat.append({"role": "assistant", "content": response})
+        return response
+
+
     def send_single_prompt(self, prompt: str, full_response=False):
-        return self._send_chat(
-            [
-                {
-                    "role": "user",
-                    "content": prompt
-                }],
-            full_response=full_response)
+        return self.send_message(message=prompt, with_previous_chat_context=False, full_response=full_response, remember_response=False)
 
     def get_data_list_analysis(self, data: list, full_response=False) -> ChatCompletion | str:
         """
@@ -54,7 +80,7 @@ class _GptClient:
         :param full_response: flag to return the full ChatCompletion object or just the message content
         :return: response from the GPT-3.5 model
         """
-        return self._send_chat(
+        return self.send_message(
             [
                 {
                     "role": "system",
@@ -72,7 +98,7 @@ class _GptClient:
         )
 
     def extract_valuable_info_from_text(self, text: str, full_response=False):
-        return self._send_chat(
+        return self.send_message(
             [
                 {
                     "role": "system",
@@ -92,7 +118,7 @@ class _GptClient:
         )
 
     def get_suggestions(self, prompt: str, full_response=False):
-        return self._send_chat(
+        return self.send_message(
             [
                 {
                     "role": "system",
@@ -109,12 +135,19 @@ class _GptClient:
             full_response=full_response
         )
 
+    def modify_config(self, **kwargs):
+        self.config.update(kwargs)
 
-class Gpt35(_GptClient):
+
+class Nemotron(_OpenAiClient):
     def __init__(self):
-        super().__init__(model="ChatGPT35")
-
-
-class Gpt4O(_GptClient):
-    def __init__(self):
-        super().__init__(model="ChatGPT4O")
+        super().__init__({
+            "client": OpenAI(base_url="https://integrate.api.nvidia.com/v1",
+                             api_key=getenv("NEMOTRON_OPENAI_API_KEY")
+                             ),
+            "model": "nvidia/llama-3.1-nemotron-70b-instruct",
+            "temperature": 0.5,
+            "top_p": 1,
+            "max_tokens": 1024
+        }
+        )

@@ -1,0 +1,20 @@
+2024-05-14 13:25:23,782 Python 3.11.6
+2024-05-14 13:25:23,782 Pyarmor 8.5.8 (trial), 000000, non-profits
+2024-05-14 13:25:23,783 Platform linux.x86_64
+2024-05-14 13:25:23,783 native platform linux.x86_64
+2024-05-14 13:25:23,783 home path: /home/klejdis/.pyarmor
+2024-05-14 13:25:23,783 command options: {'no_runtime': False, 'inputs': ['options', '...']}
+2024-05-14 13:25:23,783 install plugin: CodesignPlugin
+2024-05-14 13:25:23,783 install plugin: DarwinUniversalPlugin
+2024-05-14 13:25:23,783 no found input "options"
+2024-05-14 13:25:23,784 something is wrong
+*=============================================================*
+*  Please check                                               *
+*    https://pyarmor.readthedocs.io/en/latest/questions.html  *
+*  or run `pyarmor man` to find solutions quickly             *
+*                                                             *
+*  It's recommand to report issue by `pyarmor man` in order   *
+*  to provide necessary information, and avoid dupcliated     *
+*  issues or unclear question.                                *
+*=============================================================*
+
