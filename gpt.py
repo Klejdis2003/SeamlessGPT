@@ -23,12 +23,18 @@ class _OpenAiClient:
         except KeyError:
             raise ValueError("Invalid configuration. The configuration must at least contain the keys: client, model")
 
-    def _send_chat(self, chat: Iterable[dict[str, str]], full_response=False) -> ChatCompletion | str:
+    def _send_chat(self, chat: Iterable[dict[str, str]], full_response=False, save=False, with_previous_context=False) -> ChatCompletion | str:
+        chat = chat if with_previous_context else self.chat + chat
+
         response = self.completions.create(
             model=self._model,
             messages=chat,
             **self.config
         )
+
+        if save:
+            self.chat += chat
+
         return response if full_response else response.choices[0].message.content
 
     def send_message(self, message: str, full_response=False, with_previous_chat_context = False, remember_response = False) -> ChatCompletion | str:
@@ -142,8 +148,30 @@ class _OpenAiClient:
             full_response=full_response
         )
 
+    def exam_help(self, prompt: str, full_response=False):
+        return self._send_chat(
+            [
+                {
+                    "role": "system",
+                    "content": "You are an assistant that can help with exams. You respond to questions concisely and absolutely do not format the text. Also, if a question is of multiple choice form, you only return the correct alternative, that's it."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            full_response=full_response,
+            save=True,
+            with_previous_context=True
+        )
+
     def modify_config(self, **kwargs):
         self.config.update(kwargs)
+
+    def clear_chat(self):
+        self.chat = []
+
+
 
 
 class Nemotron(_OpenAiClient):
