@@ -23,6 +23,13 @@ class _OpenAiClient:
         except KeyError:
             raise ValueError("Invalid configuration. The configuration must at least contain the keys: client, model")
 
+    def _send_chat(self, chat: Iterable[dict[str, str]], full_response=False) -> ChatCompletion | str:
+        response = self.completions.create(
+            model=self._model,
+            messages=chat,
+            **self.config
+        )
+        return response if full_response else response.choices[0].message.content
 
     def send_message(self, message: str, full_response=False, with_previous_chat_context = False, remember_response = False) -> ChatCompletion | str:
         """
@@ -80,7 +87,7 @@ class _OpenAiClient:
         :param full_response: flag to return the full ChatCompletion object or just the message content
         :return: response from the GPT-3.5 model
         """
-        return self.send_message(
+        return self._send_chat(
             [
                 {
                     "role": "system",
@@ -98,7 +105,7 @@ class _OpenAiClient:
         )
 
     def extract_valuable_info_from_text(self, text: str, full_response=False):
-        return self.send_message(
+        return self._send_chat(
             [
                 {
                     "role": "system",
@@ -118,7 +125,7 @@ class _OpenAiClient:
         )
 
     def get_suggestions(self, prompt: str, full_response=False):
-        return self.send_message(
+        return self._send_chat(
             [
                 {
                     "role": "system",
@@ -150,4 +157,4 @@ class Nemotron(_OpenAiClient):
             "top_p": 1,
             "max_tokens": 1024
         }
-        )
+    )
